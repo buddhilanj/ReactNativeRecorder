@@ -1,0 +1,3 @@
+rootProject.name = 'ReactNativeRecorder'
+
+include ':app'
