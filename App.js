@@ -9,7 +9,8 @@ import {
   Platform,
   StyleSheet,
   Text,
-  View
+  View,
+  Button
 } from 'react-native';
 
 const instructions = Platform.select({
@@ -23,15 +24,23 @@ export default class App extends Component<{}> {
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit App.js
-        </Text>
-        <Text style={styles.instructions}>
-          {instructions}
-        </Text>
+        <View style={styles.bezel}>
+          <View style={styles.bezelInner}>
+            <View style={styles.clock}>
+              <Text style={styles.number}>00</Text>
+              <Text style={styles.indicator}>H</Text>
+              <Text style={styles.number}>00</Text>
+              <Text style={styles.indicator}>m</Text>
+              <Text style={styles.number}>00</Text>
+              <Text style={styles.indicator}>s</Text>
+            </View>
+            <Button 
+              style={styles.record} 
+              title="record"
+              color= 'red'
+              />
+          </View>
+        </View>
       </View>
     );
   }
@@ -42,16 +51,42 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    backgroundColor: '#ffe5bf',
   },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
+  bezel: {
+    width: 350,
+    height: 350,
+    justifyContent: "center",
+    borderRadius: 350,
+    alignItems: 'center',
+    backgroundColor: 'lightblue'
   },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
+  bezelInner: {
+    width: 330,
+    height: 330,
+    borderRadius: 300,
+    justifyContent: "center",
+    alignItems: 'center',
+    backgroundColor: '#ffe5bf'
   },
+  clock: {
+    width: 300,
+    height: 50,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  number: {
+    fontSize: 40,
+  },
+  indicator: {
+    fontSize: 15,
+    marginRight: 20,
+    marginBottom:10,
+  },
+  record:{
+    width:200,
+    height:200,
+    borderRadius:100
+  }
 });
