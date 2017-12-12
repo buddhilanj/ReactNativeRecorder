@@ -13,16 +13,132 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  PermissionsAndroid,
 } from 'react-native';
+import {AudioRecorder, AudioUtils} from 'react-native-audio';
 
-export default class App extends Component<{}> {
+export default class App extends Component {
 
-  constructor(props) {
-    super(props)
-    this.timer = { hour: 0, minute: 0, seconds: 0, running: false }
-    this.state = {timer:this.timer, buttonImage:require('./record.png')};
+  timer = { 
+    hour: 0, 
+    minute: 0, 
+    seconds: 0, 
+    running: false 
   }
 
+  state = {
+    timer: this.timer,
+    currentTime: 0.0,
+    recording: false,
+    stoppedRecording: false,
+    finished: false,
+    audioPath: AudioUtils.DocumentDirectoryPath + '/rctnrec_',
+    hasPermission: undefined,
+    buttonImage:require('./record.png')
+  };
+
+
+  constructor(props) {
+    super(props);
+  }
+
+  prepareRecordingPath(audioPath){
+    audioPath = audioPath+Date.now()+".aac";
+    AudioRecorder.prepareRecordingAtPath(audioPath, {
+      SampleRate: 22050,
+      Channels: 1,
+      AudioQuality: "Low",
+      AudioEncoding: "aac",
+      AudioEncodingBitRate: 32000
+    });
+  }
+
+  componentDidMount() {
+    this._checkPermission().then((hasPermission) => {
+      this.setState({ hasPermission });
+
+      if (!hasPermission) return;
+
+      this.prepareRecordingPath(this.state.audioPath);
+
+      AudioRecorder.onProgress = (data) => {
+        this.setState({currentTime: Math.floor(data.currentTime)});
+      };
+
+      AudioRecorder.onFinished = (data) => {
+        // Android callback comes in the form of a promise instead.
+        if (Platform.OS === 'ios') {
+          this._finishRecording(data.status === "OK", data.audioFileURL);
+        }
+      };
+    });
+  }
+
+  _checkPermission() {
+    if (Platform.OS !== 'android') {
+      return Promise.resolve(true);
+    }
+
+    const rationale = {
+      'title': 'Microphone Permission',
+      'message': 'AudioExample needs access to your microphone so you can record audio.'
+    };
+
+    return PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, rationale)
+      .then((result) => {
+        console.log('Permission result:', result);
+        return (result === true || result === PermissionsAndroid.RESULTS.GRANTED);
+      });
+  }
+
+  async _stop() {
+    if (!this.state.recording) {
+      console.warn('Can\'t stop, not recording!');
+      return;
+    }
+
+    this.setState({stoppedRecording: true, recording: false});
+
+    try {
+      const filePath = await AudioRecorder.stopRecording();
+
+      if (Platform.OS === 'android') {
+        this._finishRecording(true, filePath);
+      }
+      return filePath;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async _record() {
+    if (this.state.recording) {
+      console.warn('Already recording!');
+      return;
+    }
+
+    if (!this.state.hasPermission) {
+      console.warn('Can\'t record, no permission granted!');
+      return;
+    }
+
+    if(this.state.stoppedRecording){
+      this.prepareRecordingPath(this.state.audioPath);
+    }
+
+    this.setState({recording: true});
+
+    try {
+      const filePath = await AudioRecorder.startRecording();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  _finishRecording(didSucceed, filePath) {
+    this.setState({ finished: didSucceed });
+    console.log(`Finished recording of duration ${this.state.currentTime} seconds at path: ${filePath}`);
+  }
 
   onPress = () => {
     this.timer.running = !this.timer.running;
@@ -33,9 +149,10 @@ export default class App extends Component<{}> {
       this.timer.minute = 0;
       this.timer.seconds = 0;
       this.setState({timer:this.timer, buttonImage:require('./record.png')})
-      
+      this._stop();
     }
     else {
+      this._record();
       this.setState({timer:this.timer, buttonImage:require('./stop.png')});      
       this._interval = setInterval(() => {
         this.timer.seconds++;
