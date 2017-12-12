@@ -10,35 +10,67 @@ import {
   StyleSheet,
   Text,
   View,
-  Button
+  TouchableOpacity,
+  Image,
+  Alert,
 } from 'react-native';
 
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' +
-    'Cmd+D or shake for dev menu',
-  android: 'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
-
 export default class App extends Component<{}> {
+
+  constructor(props) {
+    super(props)
+    this.timer = { hour: 0, minute: 0, seconds: 0, running: false }
+    this.state = {timer:this.timer, buttonImage:require('./record.png')};
+  }
+
+
+  onPress = () => {
+    this.timer.running = !this.timer.running;
+    if (!this.timer.running) {
+      if (this._interval != null)
+        clearInterval(this._interval);
+      this.timer.hour = 0;
+      this.timer.minute = 0;
+      this.timer.seconds = 0;
+      this.setState({timer:this.timer, buttonImage:require('./record.png')})
+      
+    }
+    else {
+      this.setState({timer:this.timer, buttonImage:require('./stop.png')});      
+      this._interval = setInterval(() => {
+        this.timer.seconds++;
+        if (this.timer.seconds >= 60) {
+          this.timer.seconds = 0;
+          this.timer.minute++;
+        }
+        if (this.timer.minute >= 60) {
+          this.timer.minute = 0;
+          this.timer.hour++;
+        }
+        this.setState({timer:this.timer, buttonImage:require('./stop.png')});
+      }, 1000);
+    }
+  }
+
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.bezel}>
           <View style={styles.bezelInner}>
             <View style={styles.clock}>
-              <Text style={styles.number}>00</Text>
+              <Text style={styles.number}>{this.state.timer.hour}</Text>
               <Text style={styles.indicator}>H</Text>
-              <Text style={styles.number}>00</Text>
+              <Text style={styles.number}>{this.state.timer.minute}</Text>
               <Text style={styles.indicator}>m</Text>
-              <Text style={styles.number}>00</Text>
+              <Text style={styles.number}>{this.state.timer.seconds}</Text>
               <Text style={styles.indicator}>s</Text>
             </View>
-            <Button 
-              style={styles.record} 
-              title="record"
-              color= 'red'
+            <TouchableOpacity onPress={this.onPress}>
+              <Image
+                style={styles.button}
+                source={this.state.buttonImage}
               />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -78,15 +110,16 @@ const styles = StyleSheet.create({
   },
   number: {
     fontSize: 40,
+    marginLeft: 10
   },
   indicator: {
     fontSize: 15,
-    marginRight: 20,
-    marginBottom:10,
+    marginRight: 10,
+    marginBottom: 10,
   },
-  record:{
-    width:200,
-    height:200,
-    borderRadius:100
+  record: {
+    width: 100,
+    height: 100,
+    margin: 50
   }
 });
